@@ -21,4 +21,4 @@ class ApiError extends Error{
     }
     // Read node errors
 }
-export default {ApiError}
+export {ApiError}

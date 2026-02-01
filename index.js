@@ -18,6 +18,6 @@ connectDB()
 }
 )
 .catch((err) => {
-  console.log("Momgodb conncetion error",err)
+  console.log("Mongodb conncetion error",err)
 }
 )
