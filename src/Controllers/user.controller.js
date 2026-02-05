@@ -84,7 +84,7 @@ const registerUser=asynchandler(async(req,res)=>{
 
 })
 
-const generateAndRefreshToken=async (userId)=>{
+const generateAccessAndRefreshToken=async (userId)=>{
    try {
     const user= await User.findById(userId)
     // check for user existence
@@ -131,7 +131,7 @@ const loginUser=asynchandler(async (req,res)=>{
         throw new ApiError(401,"Invalid credentials")
      }
      const {accessToken,refreshToken}=await
-      generateAndRefreshToken(user._id)
+      generateAccessAndRefreshToken(user._id)
 
       const loggedInUser=await User.findById(user._id)
       .select("-password -refreshToken")
@@ -156,6 +156,12 @@ const loginUser=asynchandler(async (req,res)=>{
 
 })
 
+const logoutUser=asynchandler(async(req,res)=>{
+    await User.findByIdAndUpdate(
+        
+    )
+})
+
 const refreshAccessToken= asynchandler(async(req,res)=>{
     const incommingRefreshToken=req.cookie.refreshToken || req.body.refreshToken
     try {
@@ -163,15 +169,46 @@ const refreshAccessToken= asynchandler(async(req,res)=>{
             incommingRefreshToken,
             process.env.REFRESH_TOKEN_SECRET
         )
-        
+        // validation
+        const user=await User.findById(decodedToken?._id)\
+        if(!user){
+            throw new ApiError(401,"Invalid Refresh token")
+        }
+        if(incommingRefreshToken!==user?.refreshToken){
+            throw new ApiError(401,"Invalid Refresh token")
+        }
+        const options={
+        httpOnly:true,
+        secure:process.env.NODE_ENV==="production",
+        sameSite: "strict",
+      }
+       const{accessToken,refreshToken:newRefreshToken}=await generateAccessAndRefreshToken(user._id)
+       
+       return res
+          .status(200)
+          .cookie("accessToken",accessToken.options)
+          .cookie("refreshToken",newRefreshToken,options)
+          .json(
+            new ApiResponse(
+                200,
+                {accessToken,
+                    refreshToken:newRefreshToken
+                },
+                "Access token refreshed successfully"
+            )
+          );
+
+
     } catch (error) {
-        
+        throw new ApiError(500,"Something went wrong while refreshing access token")
+
     }
 })
 
 export {
     registerUser,
-    loginUser
+    loginUser,
+    refreshAccessToken
 }
 
 /*   loggin flow
