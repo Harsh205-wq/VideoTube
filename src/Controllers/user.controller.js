@@ -83,7 +83,6 @@ const registerUser=asynchandler(async(req,res)=>{
 
 
 })
-
 const generateAccessAndRefreshToken=async (userId)=>{
    try {
     const user= await User.findById(userId)
@@ -155,13 +154,6 @@ const loginUser=asynchandler(async (req,res)=>{
 
 
 })
-
-const logoutUser=asynchandler(async(req,res)=>{
-    await User.findByIdAndUpdate(
-        
-    )
-})
-
 const refreshAccessToken= asynchandler(async(req,res)=>{
     const incommingRefreshToken=req.cookie.refreshToken || req.body.refreshToken
     try {
@@ -170,7 +162,7 @@ const refreshAccessToken= asynchandler(async(req,res)=>{
             process.env.REFRESH_TOKEN_SECRET
         )
         // validation
-        const user=await User.findById(decodedToken?._id)\
+        const user=await User.findById(decodedToken?._id)
         if(!user){
             throw new ApiError(401,"Invalid Refresh token")
         }
@@ -205,10 +197,36 @@ const refreshAccessToken= asynchandler(async(req,res)=>{
     }
 })
 
+const logoutUser=asynchandler(async(req,res)=>{
+    await  User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set:{
+                refreshToken:undefined
+            }
+        },
+        {
+            new:true
+        }
+    )
+    const options={
+        httpOnly:true,
+        secure:process.env.NODE_ENV ==='production',
+    }
+    return res
+     .status(200)
+     .clearCokie("accessToken",options)
+     .clearCokie("refreshToken",options)
+     .json(new ApiResponse(200,{},"User loggedout successfully"))
+
+
+}) 
+
 export {
     registerUser,
     loginUser,
-    refreshAccessToken
+    refreshAccessToken,
+    logoutUser
 }
 
 /*   loggin flow
