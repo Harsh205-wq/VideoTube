@@ -325,7 +325,50 @@ const updateUserCoverImage=asynchandler(async(req,res)=>{
     ))
 })
 
+const getUserChannelProfile=asynchandler(async(req,res)=>{
+    const{username}=req.params
 
+    if(!username){
+        throw new ApiError(400,"Username is required")
+    }
+    const channel=await User.aggregate(
+        [
+            {
+                $match:{
+                    username:username?.toLowerCase()
+                }
+            },
+            {
+                $lookup:{
+                    from:"subscription",
+                    localField:"_id",
+                    foreignField:"channel",
+                    as:"subsribers"
+                }
+            },
+            {
+                $lookup:{
+                    from:"subscription",
+                    localField:"_id",
+                    foreignField:"subscriber",
+                    as:"subscribedTo"
+                }
+
+            },
+            {
+              $addFields:{
+                susbsriberCount:{
+                $size:"$subcribers"
+              },
+              channelSubscribedToCount:{
+                $size:"$subscriberedTo"
+              },
+             
+              }
+            }
+        ]
+    )
+})
 
 
 export {
@@ -337,7 +380,8 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    changeCurrentPassword
+    changeCurrentPassword,
+    getUserChannelProfile,
 }
 
 /*   loggin flow
